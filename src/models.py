@@ -39,6 +39,7 @@ class AIProvider(str, Enum):
     """Supported AI providers."""
     ANTHROPIC = "anthropic"
     OPENAI = "openai"
+    OPENAI_CODEX = "openai_codex"
     ALI = "ali"
     GEMINI = "gemini"
     DOUBAO = "doubao"
@@ -149,6 +150,20 @@ class WebhookConfig(BaseModel):
     enabled: bool = False
 
 
+class ReaderFeedConfig(BaseModel):
+    """RSS feed output optimized for phone reading apps."""
+
+    enabled: bool = False
+    title: str = "Horizon Personal Feed"
+    description: str = "AI-filtered stories from Horizon"
+    languages: Optional[List[str]] = None
+    output_dir: str = "data/feeds"
+    docs_output_dir: Optional[str] = "docs/feeds"
+    feed_slug: str = "horizon-selected"
+    base_url: Optional[str] = None
+    max_items: int = 50
+
+
 class EmailConfig(BaseModel):
     """Email configuration for updates/subscriptions."""
     imap_server: str
@@ -179,3 +194,4 @@ class Config(BaseModel):
     filtering: FilteringConfig
     email: Optional[EmailConfig] = None
     webhook: Optional[WebhookConfig] = None
+    reader_feed: Optional[ReaderFeedConfig] = None

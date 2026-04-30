@@ -60,7 +60,11 @@ def configure_ai() -> Optional[AIConfig]:
         default="openai",
     )
 
-    model = Prompt.ask("Model name", default="deepseek-chat" if provider == "openai" else "")
+    default_model = {
+        "openai": "deepseek-chat",
+        "openai_codex": "gpt-5.2",
+    }.get(provider, "")
+    model = Prompt.ask("Model name", default=default_model)
 
     base_url = Prompt.ask("Base URL (leave empty for default)", default="")
 
@@ -68,6 +72,7 @@ def configure_ai() -> Optional[AIConfig]:
     default_env = {
         "anthropic": "ANTHROPIC_API_KEY",
         "openai": "OPENAI_API_KEY",
+        "openai_codex": "OPENAI_CODEX_OAUTH",
         "gemini": "GOOGLE_API_KEY",
         "ali": "DASHSCOPE_API_KEY",
         "doubao": "DOUBAO_API_KEY",
@@ -79,7 +84,11 @@ def configure_ai() -> Optional[AIConfig]:
     )
 
     # Check if the key is actually set
-    if not os.getenv(api_key_env):
+    if provider == "openai_codex":
+        console.print(
+            "[cyan]Run `uv run horizon-auth openai-codex` after the wizard to complete OAuth login.[/cyan]\n"
+        )
+    elif not os.getenv(api_key_env):
         console.print(
             f"[yellow]⚠  {api_key_env} is not set in environment or .env file.[/yellow]"
         )

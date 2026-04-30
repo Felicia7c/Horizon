@@ -120,5 +120,16 @@
       }
     },
     "headers": ""
+  },
+  "reader_feed": {
+    "enabled": false,
+    "title": "Horizon Personal Feed",
+    "description": "AI-filtered stories from Horizon",
+    "languages": ["zh"],
+    "output_dir": "data/feeds",
+    "docs_output_dir": "docs/feeds",
+    "feed_slug": "horizon-selected",
+    "base_url": null,
+    "max_items": 50
   }
 }

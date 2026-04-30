@@ -35,13 +35,13 @@ ENV/
 
 # Environment variables
 .env
+openai-codex-auth.json
 
 # Data files (keep structure, ignore content)
 data/seen.json
+data/feeds/*.xml
 data/summaries/*.md
 data/subscribers.json
-
-docs/_posts/*.md
 
 # Logs
 logs/*.log

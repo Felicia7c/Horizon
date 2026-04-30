@@ -5,6 +5,7 @@ For items that pass the score threshold, this module:
 2. Feeds search results + item content to AI to generate grounded background knowledge
 """
 
+import asyncio
 import json
 import re
 import sys
@@ -28,6 +29,7 @@ class ContentEnricher:
 
     def __init__(self, ai_client: AIClient):
         self.client = ai_client
+        self.web_search_timeout_sec = float(os.getenv("HORIZON_WEB_SEARCH_TIMEOUT_SECONDS", "10"))
 
     async def enrich_batch(self, items: List[ContentItem]) -> None:
         """Enrich items in-place with background knowledge.
@@ -51,6 +53,19 @@ class ContentEnricher:
                     print(f"Error enriching item {item.id}: {e}")
                 progress.advance(task)
 
+    @staticmethod
+    def _run_ddgs_text_search(query: str, max_results: int, timeout: float) -> list:
+        """Run DDGS in a worker thread with its own request timeout."""
+        # Suppress primp "Impersonate ... does not exist" stderr warning.
+        stderr = sys.stderr
+        with open(os.devnull, "w") as devnull:
+            sys.stderr = devnull
+            try:
+                ddgs = DDGS(timeout=int(max(1, timeout)))
+                return ddgs.text(query, max_results=max_results)
+            finally:
+                sys.stderr = stderr
+
     async def _web_search(self, query: str, max_results: int = 3) -> list:
         """Search the web for context via DuckDuckGo.
 
@@ -58,15 +73,15 @@ class ContentEnricher:
             List of dicts with keys: title, url, body
         """
         try:
-            # Suppress primp "Impersonate ... does not exist" stderr warning
-            stderr = sys.stderr
-            sys.stderr = open(os.devnull, "w")
-            try:
-                ddgs = DDGS()
-                results = ddgs.text(query, max_results=max_results)
-            finally:
-                sys.stderr.close()
-                sys.stderr = stderr
+            results = await asyncio.wait_for(
+                asyncio.to_thread(
+                    self._run_ddgs_text_search,
+                    query,
+                    max_results,
+                    self.web_search_timeout_sec,
+                ),
+                timeout=self.web_search_timeout_sec,
+            )
         except Exception:
             return []
 

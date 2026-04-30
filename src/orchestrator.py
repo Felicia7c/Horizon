@@ -12,6 +12,7 @@ from .models import Config, ContentItem
 from .storage.manager import StorageManager
 from .services.email import EmailManager
 from .services.webhook import WebhookNotifier
+from .services.reader_feed import ReaderFeedGenerator
 from .scrapers.github import GitHubScraper
 from .scrapers.hackernews import HackerNewsScraper
 from .scrapers.rss import RSSScraper
@@ -41,6 +42,11 @@ class HorizonOrchestrator:
         self.webhook_notifier = (
             WebhookNotifier(config.webhook, console=self.console)
             if config.webhook and config.webhook.enabled
+            else None
+        )
+        self.reader_feed_generator = (
+            ReaderFeedGenerator(config.reader_feed)
+            if config.reader_feed and config.reader_feed.enabled
             else None
         )
 
@@ -159,6 +165,16 @@ class HorizonOrchestrator:
                     self.console.print(f"📄 Copied {lang.upper()} summary to GitHub Pages: {dest_path}\n")
                 except Exception as e:
                     self.console.print(f"[yellow]⚠️  Failed to copy {lang.upper()} summary to docs/: {e}[/yellow]\n")
+
+                # Generate phone-reader RSS feed if configured
+                if self.reader_feed_generator and self.reader_feed_generator.should_emit_language(lang):
+                    feed_paths = self.reader_feed_generator.save_feed(
+                        important_items,
+                        date=today,
+                        language=lang,
+                    )
+                    for feed_path in feed_paths:
+                        self.console.print(f"📱 Saved {lang.upper()} reader feed to: {feed_path}\n")
 
                 # Send email if configured
                 if self.email_manager and self.config.email and self.config.email.enabled:
